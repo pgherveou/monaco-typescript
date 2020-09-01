@@ -164,17 +164,21 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, monaco.language
 		return <monaco.languages.typescript.Diagnostic[]>diagnostics;
 	}
 
-	getTopLevelExpressions(fileName: string, name: string): Promise<ts.TextRange[]> {
-		const ranges: ts.TextRange[] = []
-		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName)
+	getTopLevelExpressions(fileName: string, name: string): Promise<monaco.IRange[]> {
+		const ranges: monaco.IRange[] = [];
+
+		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
 		if (sourceFile) {
 			sourceFile.forEachChild((node) => {
 				if (node.kind === ts.SyntaxKind.ExpressionStatement && (node as ts.ExpressionStatement).expression.getText()) {
-					ranges.push({ pos: node.getStart(), end: node.getEnd()})
+					const { line: startLineNumber, character: startColumn} = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+					const { line: endLineNumber, character: endColumn} = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+					ranges.push({ startLineNumber, startColumn, endLineNumber, endColumn });
 				}
 			})
 		}
-		return Promise.resolve(ranges)
+
+		return Promise.resolve(ranges);
 	}
 
 	getSyntacticDiagnostics(fileName: string): Promise<monaco.languages.typescript.Diagnostic[]> {
