@@ -9,6 +9,7 @@
 
 <h2>Monaco Editor TypeScript test page</h2>
 <button id="resetBtn">Reset Sample</button>
+<button id="testBtn">Test</button>
 <div id="container" style="width:800px;height:600px;border:1px solid grey"></div>
 <h3>Compiler settings</h3>
 <textarea style="font-family: monospace;" id="compilerOpts" cols="60" rows="30"></textarea><br/>
@@ -188,6 +189,15 @@
 		document.getElementById('resetBtn').onclick = () => {
 			editor.setValue(getDefaultCode());
 		};
+
+		document.getElementById('testBtn').onclick = async () => {
+			const uri = editor.getModel().uri
+      		const worker = await monaco.languages.typescript.getTypeScriptWorker()
+      		const client = await worker(uri)
+
+			const expressions = await client.getTopLevelExpressions(uri.toString(), 'test').catch(() => '')
+			console.log(expressions)
+		}
 
 		const optsString = localStorage.getItem("compiler-opts") || JSON.stringify(getDefaultComplierOpts(), null, 4)
 		document.getElementById("compilerOpts").textContent = optsString
