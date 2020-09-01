@@ -164,16 +164,21 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, monaco.language
 		return <monaco.languages.typescript.Diagnostic[]>diagnostics;
 	}
 
-	getTopLevelExpressions(fileName: string, name: string): Promise<monaco.IRange[]> {
+	getTopLevelExpressions(fileName: string, text: string): Promise<monaco.IRange[]> {
 		const ranges: monaco.IRange[] = [];
 
 		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
 		if (sourceFile) {
 			sourceFile.forEachChild((node) => {
-				if (node.kind === ts.SyntaxKind.ExpressionStatement && (node as ts.ExpressionStatement).expression.getText()) {
-					const { line: startLineNumber, character: startColumn} = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-					const { line: endLineNumber, character: endColumn} = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
-					ranges.push({ startLineNumber, startColumn, endLineNumber, endColumn });
+				if (node.kind === ts.SyntaxKind.ExpressionStatement && (node as any).expression?.expression?.getText() === text) {
+					const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+					const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+					ranges.push({
+						startLineNumber: start.line + 1,
+						startColumn: start.character + 1,
+						endLineNumber: end.line + 1,
+						endColumn: end.character + 1
+					});
 				}
 			})
 		}
