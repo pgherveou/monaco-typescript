@@ -11,7 +11,7 @@ import {
 	IExtraLibs,
 	TypeScriptWorker as ITypeScriptWorker
 } from './monaco.contribution';
-import { worker } from './fillers/monaco-editor-core';
+import { IRange, worker } from './fillers/monaco-editor-core';
 
 export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWorker {
 	// --- model sync -----------------------
@@ -169,6 +169,44 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 			}
 		});
 		return <Diagnostic[]>diagnostics;
+	}
+
+	getTopLevelExpressions(fileName: string, search: string | RegExp): Promise<IRange[]> {
+		const ranges: IRange[] = [];
+
+		const matcher: (node: ts.Node) => boolean = (() => {
+			const textMatch: (text: string) => boolean =
+				typeof search === 'string' ? (text) => text === search : (text) => search.test(text);
+
+			return (node: ts.Node) => {
+				if (node.kind !== ts.SyntaxKind.ExpressionStatement) {
+					return false;
+				}
+
+				const text = ((node as ts.ExpressionStatement).expression as
+					| ts.CallExpression
+					| undefined)?.expression?.getText();
+				return text ? textMatch(text) : false;
+			};
+		})();
+
+		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
+		if (sourceFile) {
+			sourceFile.forEachChild((node) => {
+				if (matcher(node)) {
+					const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+					const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+					ranges.push({
+						startLineNumber: start.line + 1,
+						startColumn: start.character + 1,
+						endLineNumber: end.line + 1,
+						endColumn: end.character + 1
+					});
+				}
+			});
+		}
+
+		return Promise.resolve(ranges);
 	}
 
 	async getSyntacticDiagnostics(fileName: string): Promise<Diagnostic[]> {
