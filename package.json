@@ -1,5 +1,5 @@
 {
-	"name": "monaco-typescript",
+	"name": "@pgherveou/monaco-typescript",
 	"version": "4.2.0",
 	"description": "TypeScript and JavaScript language support for Monaco Editor",
 	"scripts": {
