@@ -24,7 +24,9 @@ export enum JsxEmit {
 	None = 0,
 	Preserve = 1,
 	React = 2,
-	ReactNative = 3
+	ReactNative = 3,
+	ReactJSX = 4,
+	ReactJSXDev = 5
 }
 
 export enum NewLineKind {
@@ -338,7 +340,7 @@ export interface TypeScriptWorker {
 	 * Get signature help items for the item at the given file and position.
 	 * @returns `Promise<typescript.SignatureHelpItems | undefined>`
 	 */
-	getSignatureHelpItems(fileName: string, position: number): Promise<any | undefined>;
+	getSignatureHelpItems(fileName: string, position: number, options: any): Promise<any | undefined>;
 
 	/**
 	 * Get quick info for the item at the given position in the file.

@@ -115,7 +115,7 @@ export class LibFiles {
 			return model;
 		}
 		if (this.isLibFile(uri) && this._hasFetchedLibFiles) {
-			return editor.createModel(this._libFiles[uri.path.slice(1)], 'javascript', uri);
+			return editor.createModel(this._libFiles[uri.path.slice(1)], 'typescript', uri);
 		}
 		return null;
 	}
@@ -538,15 +538,42 @@ function tagToString(tag: ts.JSDocTagInfo): string {
 export class SignatureHelpAdapter extends Adapter implements languages.SignatureHelpProvider {
 	public signatureHelpTriggerCharacters = ['(', ','];
 
+	private static _toSignatureHelpTriggerReason(
+		context: languages.SignatureHelpContext
+	): ts.SignatureHelpTriggerReason {
+		switch (context.triggerKind) {
+			case languages.SignatureHelpTriggerKind.TriggerCharacter:
+				if (context.triggerCharacter) {
+					if (context.isRetrigger) {
+						return { kind: 'retrigger', triggerCharacter: context.triggerCharacter as any };
+					} else {
+						return { kind: 'characterTyped', triggerCharacter: context.triggerCharacter as any };
+					}
+				} else {
+					return { kind: 'invoked' };
+				}
+
+			case languages.SignatureHelpTriggerKind.ContentChange:
+				return context.isRetrigger ? { kind: 'retrigger' } : { kind: 'invoked' };
+
+			case languages.SignatureHelpTriggerKind.Invoke:
+			default:
+				return { kind: 'invoked' };
+		}
+	}
+
 	public async provideSignatureHelp(
 		model: editor.ITextModel,
 		position: Position,
-		token: CancellationToken
+		token: CancellationToken,
+		context: languages.SignatureHelpContext
 	): Promise<languages.SignatureHelpResult | undefined> {
 		const resource = model.uri;
 		const offset = model.getOffsetAt(position);
 		const worker = await this._worker(resource);
-		const info = await worker.getSignatureHelpItems(resource.toString(), offset);
+		const info = await worker.getSignatureHelpItems(resource.toString(), offset, {
+			triggerReason: SignatureHelpAdapter._toSignatureHelpTriggerReason(context)
+		});
 
 		if (!info || model.isDisposed()) {
 			return;
@@ -899,6 +926,10 @@ export class FormatAdapter
 			column: range.endColumn
 		});
 		const worker = await this._worker(resource);
+		if (model.isDisposed()) {
+			return;
+		}
+
 		const edits = await worker.getFormattingEditsForRange(
 			resource.toString(),
 			startOffset,
@@ -1067,13 +1098,19 @@ export class RenameAdapter extends Adapter implements languages.RenameProvider {
 
 		const edits: languages.WorkspaceTextEdit[] = [];
 		for (const renameLocation of renameLocations) {
-			edits.push({
-				resource: Uri.parse(renameLocation.fileName),
-				edit: {
-					range: this._textSpanToRange(model, renameLocation.textSpan),
-					text: newName
-				}
-			});
+			const resource = Uri.parse(renameLocation.fileName);
+			const model = editor.getModel(resource);
+			if (model) {
+				edits.push({
+					resource,
+					edit: {
+						range: this._textSpanToRange(model, renameLocation.textSpan),
+						text: newName
+					}
+				});
+			} else {
+				throw new Error(`Unknown URI ${resource}.`);
+			}
 		}
 
 		return { edits };
