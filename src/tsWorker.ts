@@ -31,6 +31,13 @@ function fileNameIsLib(resource: Uri | string): boolean {
 	return false;
 }
 
+type ImportDeclarationInfo = {
+	import: {
+		name: string;
+	};
+	range: IRange;
+};
+
 export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWorker {
 	// --- model sync -----------------------
 
@@ -190,7 +197,7 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 		return <Diagnostic[]>diagnostics;
 	}
 
-	getTopLevelExpressions(fileName: string, search: string | RegExp): Promise<IRange[]> {
+	async getTopLevelExpressions(fileName: string, search: string | RegExp): Promise<IRange[]> {
 		const ranges: IRange[] = [];
 
 		const matcher: (node: ts.Node) => boolean = (() => {
@@ -225,7 +232,51 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 			});
 		}
 
-		return Promise.resolve(ranges);
+		return ranges;
+	}
+
+	async getImportDeclarations(fileName: string): Promise<ImportDeclarationInfo[]> {
+		const imports: ImportDeclarationInfo[] = [];
+
+		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
+		if (sourceFile) {
+			sourceFile.forEachChild((node) => {
+				if (ts.isImportDeclaration(node)) {
+					const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+					const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+					const range = {
+						startLineNumber: start.line + 1,
+						startColumn: start.character + 1,
+						endLineNumber: end.line + 1,
+						endColumn: end.character + 1
+					};
+
+					imports.push({
+						import: { name: node.moduleSpecifier.getFullText() },
+						range
+					});
+				}
+			});
+		}
+
+		return imports;
+	}
+
+	async getFirstStatementLineNumber(fileName: string): Promise<number> {
+		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
+		if (!sourceFile) {
+			return 0;
+		}
+
+		const node = sourceFile.getFirstToken();
+		if (node) {
+			const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+			const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+			console.log({ start, end });
+			return start.line;
+		}
+
+		return 0;
 	}
 
 	async getSyntacticDiagnostics(fileName: string): Promise<Diagnostic[]> {

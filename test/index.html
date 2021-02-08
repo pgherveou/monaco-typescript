@@ -202,7 +202,18 @@
 					const expressions = await client
 						.getTopLevelExpressions(uri.toString(), /test|bar/)
 						.catch(() => '');
-					console.log(expressions);
+
+					console.log({ expressions });
+
+					const importDeclarations = await client
+						.getImportDeclarations(uri.toString())
+						.catch(() => '');
+
+					const firstStatement = await client
+						.getFirstStatementLineNumber(uri.toString())
+						.catch(() => '');
+
+					console.log({ firstStatement });
 				};
 
 				const optsString =
