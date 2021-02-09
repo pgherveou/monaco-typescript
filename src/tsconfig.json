@@ -4,7 +4,7 @@
 		"moduleResolution": "node",
 		"outDir": "../out/amd",
 		"declaration": true,
-		"target": "es5",
+		"target": "ES2018",
 		"lib": ["dom", "es5", "es2015.collection", "es2015.iterable", "es2015.promise"],
 		"strict": true
 	}
