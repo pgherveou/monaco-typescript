@@ -271,12 +271,10 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 		const node = sourceFile.getFirstToken();
 		if (node) {
 			const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-			const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
-			console.log({ start, end });
 			return start.line;
 		}
 
-		return 0;
+		return sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line;
 	}
 
 	async getSyntacticDiagnostics(fileName: string): Promise<Diagnostic[]> {
