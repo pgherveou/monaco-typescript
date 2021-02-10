@@ -976,6 +976,7 @@ declare namespace ts {
         readonly literal: TemplateMiddle | TemplateTail;
     }
     export interface Expression extends Node {
+		text: string;
         _expressionBrand: any;
     }
     export interface OmittedExpression extends Expression {

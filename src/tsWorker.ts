@@ -252,7 +252,7 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 					};
 
 					imports.push({
-						import: { name: node.moduleSpecifier.getFullText() },
+						import: { name: node.moduleSpecifier.text },
 						range
 					});
 				}
@@ -266,6 +266,11 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 		const sourceFile = this._languageService.getProgram()?.getSourceFile(fileName);
 		if (!sourceFile) {
 			return 0;
+		}
+
+		const importStatement = (await this.getImportDeclarations(fileName)).pop();
+		if (importStatement) {
+			return importStatement.range.endLineNumber + 1;
 		}
 
 		const node = sourceFile.getFirstToken();

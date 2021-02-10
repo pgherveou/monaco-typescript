@@ -209,6 +209,8 @@
 						.getImportDeclarations(uri.toString())
 						.catch(() => '');
 
+					console.log({ importDeclarations });
+
 					const firstStatement = await client
 						.getFirstStatementLineNumber(uri.toString())
 						.catch(() => '');
