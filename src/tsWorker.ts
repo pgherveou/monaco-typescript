@@ -251,8 +251,9 @@ export class TypeScriptWorker implements ts.LanguageServiceHost, ITypeScriptWork
 						endColumn: end.character + 1
 					};
 
+					const specifier = node.moduleSpecifier as ts.StringLiteral;
 					imports.push({
-						import: { name: node.moduleSpecifier.text },
+						import: { name: specifier.text },
 						range
 					});
 				}
